@@ -22,6 +22,7 @@ setup(
     keywords="Azure Kubernetes ML",
     install_requires=[
         "click>=6.7",
+        "ruamel.yaml",
     ],
     setup_requires=[
     ],
