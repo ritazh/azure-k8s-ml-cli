@@ -1,7 +1,12 @@
 import click
 from azk8sml.constants import DOCKER_IMAGES
 from azk8sml.log import logger as azk8sml_logger
+import os
+from ruamel.yaml import YAML
 
+current_dir = os.path.dirname(__file__)
+output_dir = "_output"
+yaml = YAML()
 
 @click.command()
 @click.option('--gpu/--cpu', default=False, help='Run on a gpu instance')
@@ -29,7 +34,22 @@ def execute(ctx, gpu, mountpath, storageaccountname, storageaccountkey, library,
     print("""
 Generating secret yaml files...
     """)
-    
+    secret_yaml = "azurefile-secret.yaml"
+    secretyaml_filepath = os.path.join(current_dir + '/../templates', secret_yaml)
+    f = open(secretyaml_filepath, 'r')
+    s = f.read()
+    data = yaml.load(s)
+    data['data']['azurestorageaccountname'] = storageaccountname
+    data['data']['azurestorageaccountkey'] = storageaccountkey
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+
+    output_filepath = os.path.join(output_dir, secret_yaml)
+    with open(output_filepath, 'w') as secretyaml_file:
+        yaml.dump(data, secretyaml_file)
+        print("""
+Locate generated secret yaml file: {}
+    """.format(output_filepath))
 
     if mode == 'job':
         print("""
