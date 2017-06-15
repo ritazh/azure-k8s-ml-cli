@@ -3,6 +3,7 @@ from azk8sml.constants import DOCKER_IMAGES
 from azk8sml.log import logger as azk8sml_logger
 import os
 from ruamel.yaml import YAML
+import numpy
 
 current_dir = os.path.dirname(__file__)
 output_dir = "_output"
@@ -31,6 +32,8 @@ def execute(ctx, gpu, mountpath, storageaccountname, storageaccountkey, library,
     
     azk8sml_logger.info("Running mode: {}".format(mode))
     docker_image = get_docker_image(library, gpu)
+
+    # Secret yaml
     print("""
 Generating secret yaml files...
     """)
@@ -51,10 +54,29 @@ Generating secret yaml files...
 Locate generated secret yaml file: {}
     """.format(output_filepath))
 
+    # Deployment/Job/Service yaml
     if mode == 'job':
         print("""
-Create yaml file for deployment for training using image: `{}`
+Create yaml file training using image: `{}`
             """.format(docker_image))
+        train_yaml = "train_gpu.yaml" if gpu else "train.yaml"
+        trainyaml_filepath = os.path.join(current_dir + '/../templates/' + library, train_yaml)
+        f = open(trainyaml_filepath, 'r')
+        s = f.read()
+        data = yaml.load(s)
+        data['spec']['template']['spec']['containers'][0]['image'] = docker_image
+        data['spec']['template']['spec']['containers'][0]['volumeMounts'][0]['mountPath'] = mountpath
+        data['spec']['template']['spec']['containers'][0]['command'] = str(command[0]).split()
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir)
+
+        output_filepath = os.path.join(output_dir, train_yaml)
+        with open(output_filepath, 'w') as trainyaml_file:
+            yaml.default_flow_style='"'
+            yaml.dump(data, trainyaml_file)
+            print("""
+    Locate generated training yaml file: {}
+        """.format(output_filepath))
         return
     if mode in ['jupyter', 'serve']:
         

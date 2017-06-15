@@ -1,0 +1,26 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  labels:
+    app: tensorflow-trainer
+  name: tensorflow-trainer
+spec:
+  template:
+    metadata:
+      name: tensorflow-trainer
+    spec:
+      volumes:
+      - name: azurefile
+        azureFile:
+          secretName: azure-secret
+          shareName: data
+          readOnly: false 
+      containers:
+      - name: tensorflow-trainer
+        command:
+        image:
+        volumeMounts:
+        - mountPath:
+          name: azurefile    
+        imagePullPolicy: Always
+      restartPolicy: Never
